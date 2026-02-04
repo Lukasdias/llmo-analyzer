@@ -29,11 +29,13 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 
-# Set your Groq API key
-export GROQ_API_KEY="your_key_here"
+# Create .env.local with your Groq API key
+echo "GROQ_API_KEY=your_key_here" > .env.local
 ```
 
 Get a free API key: https://console.groq.com/keys
+
+The app will automatically load the API key from `.env.local`.
 
 ## Usage
 

@@ -107,16 +107,13 @@ def main():
     st.write("Check how AI-friendly a webpage is")
     
     with st.sidebar:
-        st.header("Settings")
+        st.header("Info")
         
-        api_key = st.text_input(
-            "Groq API Key",
-            value=Config.GROQ_API_KEY or "",
-            type="password"
-        )
-        
-        if api_key:
-            Config.GROQ_API_KEY = api_key
+        if Config.GROQ_API_KEY:
+            st.success("Groq API key loaded")
+        else:
+            st.error("No API key found")
+            st.info("Add GROQ_API_KEY to .env.local")
         
         st.divider()
         st.write("Checks: Content Structure, Metadata, Readability, Entity Clarity, Extractability, Citation")

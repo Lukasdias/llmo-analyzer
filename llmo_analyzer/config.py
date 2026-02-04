@@ -7,8 +7,10 @@ import os
 from typing import Optional
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables from .env and .env.local files
+# .env.local takes precedence (common pattern for local secrets)
 load_dotenv()
+load_dotenv(".env.local", override=True)
 
 
 class Config:
