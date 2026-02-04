@@ -69,7 +69,7 @@ class WebScraper:
         
         try:
             # First, fetch with trafilatura for main content extraction
-            downloaded = fetch_url(url, timeout=self.timeout)
+            downloaded = fetch_url(url)
             
             if downloaded is None:
                 return ScrapedContent(

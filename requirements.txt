@@ -9,4 +9,3 @@ lxml>=4.9.3
 plotly>=5.18.0
 python-dotenv>=1.0.0
 pydantic>=2.5.0
-tenacity>=8.2.0

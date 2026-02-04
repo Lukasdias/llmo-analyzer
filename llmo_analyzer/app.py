@@ -7,10 +7,10 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from config import Config
-from groq_analyzer import AIEvaluation, GroqAnalyzer
-from heuristics import HeuristicAnalyzer, HeuristicScores
-from scraper import ScrapedContent, WebScraper
+from llmo_analyzer.config import Config
+from llmo_analyzer.groq_analyzer import AIEvaluation, GroqAnalyzer
+from llmo_analyzer.heuristics import HeuristicAnalyzer, HeuristicScores
+from llmo_analyzer.scraper import ScrapedContent, WebScraper
 
 # Page configuration
 st.set_page_config(

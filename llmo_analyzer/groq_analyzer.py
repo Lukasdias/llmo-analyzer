@@ -8,10 +8,9 @@ from dataclasses import dataclass
 from typing import Optional
 
 from groq import Groq, RateLimitError, APIConnectionError, APIStatusError
-from tenacity import retry, stop_after_attempt, wait_exponential
 
-from config import Config
-from scraper import ScrapedContent
+from llmo_analyzer.config import Config
+from llmo_analyzer.scraper import ScrapedContent
 
 
 @dataclass
@@ -52,11 +51,6 @@ class GroqAnalyzer:
         self.client = Groq(api_key=self.api_key)
         self.model = Config.GROQ_MODEL
     
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=4, max=10),
-        retry=(RateLimitError, APIConnectionError)
-    )
     def analyze(self, content: ScrapedContent) -> AIEvaluation:
         """
         Analyze content using Groq's LLM.

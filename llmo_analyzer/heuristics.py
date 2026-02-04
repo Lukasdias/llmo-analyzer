@@ -8,8 +8,8 @@ from typing import Optional
 
 import textstat
 
-from config import Config
-from scraper import ScrapedContent
+from llmo_analyzer.config import Config
+from llmo_analyzer.scraper import ScrapedContent
 
 
 @dataclass
