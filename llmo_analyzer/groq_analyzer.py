@@ -70,49 +70,30 @@ class GroqAnalyzer:
             text_content = text_content[:Config.MAX_CONTENT_LENGTH] + "..."
         
         # Prepare the prompt
-        system_prompt = """You are an expert AI Content Evaluator specializing in Large Language Model Optimization (LLMO).
-Your task is to analyze web content and evaluate its "AI-friendliness" - how well it can be understood, processed, and utilized by AI systems like RAG pipelines, chatbots, and search engines.
+        system_prompt = """You are an AI content evaluator. Analyze web content and score it on three dimensions:
 
-Evaluate the content on three dimensions:
+1. Entity Clarity (0-100): Are names, products, and concepts clearly defined?
+2. Extractability (0-100): How easily can this be chunked and retrieved by RAG systems?
+3. Citation Potential (0-100): Is this authoritative enough for AI to cite?
 
-1. **Entity Clarity** (0-100): Are brand names, products, services, and key concepts clearly defined and unambiguous? AI systems need clear entity recognition.
-
-2. **Extractability** (0-100): How easily can this content be chunked, embedded, and retrieved by a RAG system? Consider structure, semantic coherence, and information density.
-
-3. **Citation Potential** (0-100): Is this content authoritative, factual, and well-sourced enough that an AI would confidently cite it as a reference?
-
-Provide your evaluation as a JSON object with this exact structure:
+Return JSON with this structure:
 {
-  "entity_clarity": {
-    "score": <number 0-100>,
-    "reasoning": "<2-3 sentences explaining the score>"
-  },
-  "extractability": {
-    "score": <number 0-100>,
-    "reasoning": "<2-3 sentences explaining the score>"
-  },
-  "citation_potential": {
-    "score": <number 0-100>,
-    "reasoning": "<2-3 sentences explaining the score>"
-  },
-  "recommendations": [
-    "<specific recommendation 1>",
-    "<specific recommendation 2>"
-  ]
+  "entity_clarity": {"score": <0-100>, "reasoning": "<brief>"},
+  "extractability": {"score": <0-100>, "reasoning": "<brief>"},
+  "citation_potential": {"score": <0-100>, "reasoning": "<brief>"},
+  "recommendations": ["<item1>", "<item2>"]
 }
 
-Be objective and critical. Scores of 80+ should be reserved for truly excellent AI-friendly content."""
+Be objective. Reserve 80+ for excellent content."""
 
-        user_prompt = f"""Analyze the following web content for AI-friendliness:
+        user_prompt = f"""URL: {content.url}
+Title: {content.title}
+Words: {content.word_count}
 
-**URL**: {content.url}
-**Title**: {content.title}
-**Word Count**: {content.word_count}
-
-**Content**:
+Content:
 {text_content}
 
-Provide your evaluation in the exact JSON format specified in your instructions."""
+Analyze and return JSON."""
 
         try:
             # Make API call to Groq

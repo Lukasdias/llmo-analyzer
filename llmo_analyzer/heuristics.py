@@ -216,38 +216,32 @@ class HeuristicAnalyzer:
         ) / (Config.WEIGHT_READABILITY + Config.WEIGHT_STRUCTURE + Config.WEIGHT_TECHNICAL)
     
     def _generate_recommendations(self, content: ScrapedContent, scores: HeuristicScores) -> None:
-        """Generate actionable recommendations based on scores."""
+        """Generate recommendations based on scores."""
         recommendations = []
         
-        # Readability recommendations
         if scores.flesch_reading_ease < Config.READABILITY_FAIR:
-            recommendations.append("📖 **Improve Readability**: Content is very difficult to read. Consider simplifying language and shortening sentences.")
+            recommendations.append("Content is hard to read. Simplify language.")
         elif scores.flesch_reading_ease < Config.READABILITY_GOOD:
-            recommendations.append("📖 **Enhance Readability**: Content is somewhat difficult. Use simpler words and shorter paragraphs.")
+            recommendations.append("Content is somewhat difficult. Use simpler words.")
         
-        # Structure recommendations
         if not scores.has_h1:
-            recommendations.append("🏗️ **Add H1 Tag**: Include a single, descriptive H1 heading that clearly states the page topic.")
+            recommendations.append("Add an H1 heading.")
         elif scores.h1_count > 1:
-            recommendations.append("🏗️ **Consolidate H1 Tags**: Use only one H1 tag per page for better SEO and structure.")
+            recommendations.append("Use only one H1 tag.")
         
         if not scores.has_h2:
-            recommendations.append("🏗️ **Add H2 Headings**: Break content into sections with H2 headings for better organization.")
+            recommendations.append("Add H2 headings for structure.")
         
-        if not scores.has_h3 and content.word_count > 800:
-            recommendations.append("🏗️ **Consider H3 Subsections**: For longer content, use H3 tags to create deeper structure.")
-        
-        # Technical recommendations
         if not scores.has_meta_description:
-            recommendations.append("🔍 **Add Meta Description**: Include a compelling meta description (120-160 characters) for better SERP visibility.")
+            recommendations.append("Add meta description.")
         
         if not scores.has_json_ld:
-            recommendations.append("📋 **Add Schema Markup**: Implement JSON-LD structured data (Article, Product, Organization, etc.) to help AI understand your content.")
+            recommendations.append("Add JSON-LD schema markup.")
         
         if not scores.has_bullet_points:
-            recommendations.append("• **Use Bullet Points**: Break up text with bulleted lists to improve scannability and AI extraction.")
+            recommendations.append("Use bullet points for readability.")
         
         if content.word_count < 300:
-            recommendations.append("📝 **Expand Content**: Consider adding more content (aim for 500+ words) to provide comprehensive information.")
+            recommendations.append("Add more content (aim for 500+ words).")
         
-        scores.recommendations = recommendations if recommendations else ["✅ **Great Job!** Your content follows LLMO best practices."]
+        scores.recommendations = recommendations if recommendations else ["No major issues."]
