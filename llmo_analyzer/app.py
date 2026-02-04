@@ -2,8 +2,6 @@
 LLMO Analyzer - Check how AI-friendly a webpage is
 """
 
-import pandas as pd
-import plotly.graph_objects as go
 import streamlit as st
 
 from llmo_analyzer.config import Config
@@ -17,80 +15,67 @@ st.set_page_config(
     layout="wide"
 )
 
-def create_gauge_chart(score: float, title: str, color: str = "#1f77b4") -> go.Figure:
-    """Create a gauge chart for displaying scores."""
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=score,
-        domain={'x': [0, 1], 'y': [0, 1]},
-        title={'text': title, 'font': {'size': 16}},
-        gauge={
-            'axis': {'range': [None, 100], 'tickwidth': 1, 'tickcolor': "#333"},
-            'bar': {'color': color},
-            'bgcolor': "white",
-            'borderwidth': 1,
-            'bordercolor': "#ccc",
-            'steps': [
-                {'range': [0, 50], 'color': '#ffcccc'},
-                {'range': [50, 75], 'color': '#ffffcc'},
-                {'range': [75, 90], 'color': '#ccffcc'},
-                {'range': [90, 100], 'color': '#99ff99'}
-            ],
-            'threshold': {
-                'line': {'color': "#333", 'width': 2},
-                'thickness': 0.75,
-                'value': 90
-            }
-        }
-    ))
-    
-    fig.update_layout(
-        height=250,
-        margin=dict(l=20, r=20, t=50, b=20),
-        paper_bgcolor="white",
-        font={'color': "#333", 'family': "Arial"}
-    )
-    
-    return fig
 
-
-def display_score_breakdown(heuristic_scores: HeuristicScores, ai_evaluation: AIEvaluation):
-    """Display detailed score breakdown."""
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.subheader("Heuristics")
-        st.metric("Readability", f"{heuristic_scores.readability_score:.1f}")
-        st.metric("Structure", f"{heuristic_scores.structure_score:.1f}")
-        st.metric("Technical", f"{heuristic_scores.technical_score:.1f}")
-    
-    with col2:
-        st.subheader("AI Scores")
-        if ai_evaluation.error:
-            st.error(ai_evaluation.error)
-        else:
-            st.metric("Entity Clarity", f"{ai_evaluation.entity_clarity_score:.1f}")
-            st.metric("Extractability", f"{ai_evaluation.extractability_score:.1f}")
-            st.metric("Citation", f"{ai_evaluation.citation_potential_score:.1f}")
-    
-    with col3:
-        st.subheader("Stats")
-        st.metric("Words", f"{heuristic_scores.word_count:,}")
-        st.metric("Flesch-Kincaid", f"{heuristic_scores.flesch_kincaid_grade:.1f}")
-        st.write(f"Schema: {'Yes' if heuristic_scores.has_json_ld else 'No'}")
-
-
-def display_recommendations(heuristic_scores: HeuristicScores, ai_evaluation: AIEvaluation):
-    """Display recommendations."""
-    st.subheader("Recommendations")
-    
-    all_recs = heuristic_scores.recommendations + ai_evaluation.ai_recommendations
-    
-    if all_recs:
-        for i, rec in enumerate(all_recs, 1):
-            st.write(f"{i}. {rec}")
+def get_rating(score: float) -> str:
+    """Get rating label for score."""
+    if score >= 80:
+        return "Excellent"
+    elif score >= 60:
+        return "Good"
+    elif score >= 40:
+        return "Fair"
     else:
-        st.write("Looks good!")
+        return "Poor"
+
+
+def get_rating_color(score: float) -> str:
+    """Get color for score."""
+    if score >= 80:
+        return "#28a745"
+    elif score >= 60:
+        return "#17a2b8"
+    elif score >= 40:
+        return "#ffc107"
+    else:
+        return "#dc3545"
+
+
+def display_category(name: str, score: float, description: str, recommendations: list[str], good_points: list[str] = None):
+    """Display a category with expandable details."""
+    rating = get_rating(score)
+    color = get_rating_color(score)
+    
+    # Main display
+    st.markdown(f"""
+    <div style="border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 10px 0; background: white;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0; font-size: 1.3rem; color: #333;">{name}</h3>
+            <div style="text-align: right;">
+                <div style="font-size: 1.1rem; font-weight: bold; color: {color};">{rating}</div>
+                <div style="font-size: 1.5rem; font-weight: bold; color: #333;">{score:.0f}%</div>
+            </div>
+        </div>
+        <div style="background: #f0f0f0; border-radius: 4px; height: 8px; margin: 10px 0;">
+            <div style="background: {color}; width: {score}%; height: 100%; border-radius: 4px;"></div>
+        </div>
+        <p style="color: #666; margin: 10px 0;">{description}</p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    # Expandable details
+    with st.expander("View Analysis Details"):
+        if good_points:
+            st.write("**Good Points:**")
+            for point in good_points:
+                st.write(f"- {point}")
+        
+        if recommendations:
+            st.write("**Recommendations:**")
+            for rec in recommendations:
+                st.write(f"- {rec}")
+        
+        if not good_points and not recommendations:
+            st.write("No specific recommendations.")
 
 
 def analyze_single_url(url: str) -> tuple[ScrapedContent, HeuristicScores, AIEvaluation]:
@@ -118,7 +103,7 @@ def analyze_single_url(url: str) -> tuple[ScrapedContent, HeuristicScores, AIEva
 
 
 def main():
-    st.title("🤖 LLMO Analyzer")
+    st.title("LLMO Analyzer")
     st.write("Check how AI-friendly a webpage is")
     
     with st.sidebar:
@@ -133,91 +118,120 @@ def main():
         if api_key:
             Config.GROQ_API_KEY = api_key
         
-        mode = st.radio("Mode", ["Single URL", "Compare"])
-        
         st.divider()
-        st.write("Checks readability, structure, schema markup, and AI usability")
+        st.write("Checks: Content Structure, Metadata, Readability, Entity Clarity, Extractability, Citation")
     
-    if mode == "Single URL":
-        url = st.text_input("URL", placeholder="https://example.com")
+    url = st.text_input("URL", placeholder="https://example.com")
+    
+    if st.button("Analyze", type="primary") and url:
+        content, heuristic_scores, ai_evaluation = analyze_single_url(url)
         
-        if st.button("Analyze", type="primary") and url:
-            content, heuristic_scores, ai_evaluation = analyze_single_url(url)
+        if content.error:
+            st.error(content.error)
+        else:
+            # Calculate overall score first
+            total_score = 0.0
+            count = 0
+            if heuristic_scores:
+                total_score += heuristic_scores.structure_score + heuristic_scores.technical_score + heuristic_scores.readability_score
+                count += 3
+            if ai_evaluation and not ai_evaluation.error:
+                total_score += ai_evaluation.entity_clarity_score + ai_evaluation.extractability_score + ai_evaluation.citation_potential_score
+                count += 3
             
-            if content.error:
-                st.error(content.error)
-            else:
-                total_score = 0.0
-                if heuristic_scores:
-                    total_score += heuristic_scores.overall_heuristic_score * 0.6
-                if ai_evaluation and not ai_evaluation.error:
-                    total_score += ai_evaluation.overall_ai_score * 0.4
+            if count > 0:
+                overall = total_score / count
+                overall_rating = get_rating(overall)
+                overall_color = get_rating_color(overall)
                 
-                st.plotly_chart(
-                    create_gauge_chart(total_score, "Score", "#1f77b4"),
-                    use_container_width=True
+                # Display overall score at the top
+                st.markdown(f"""
+                <div style="border: 2px solid {overall_color}; border-radius: 12px; padding: 30px; margin: 20px 0; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); text-align: center;">
+                    <div style="font-size: 1.2rem; color: #666; margin-bottom: 10px;">Overall Score</div>
+                    <div style="font-size: 4rem; font-weight: bold; color: {overall_color};">{overall:.0f}%</div>
+                    <div style="font-size: 1.5rem; font-weight: bold; color: {overall_color};">{overall_rating}</div>
+                    <div style="background: white; border-radius: 8px; height: 12px; margin: 15px auto; max-width: 400px; border: 1px solid #ddd;">
+                        <div style="background: {overall_color}; width: {overall}%; height: 100%; border-radius: 8px;"></div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+            
+            # Display categories
+            st.subheader("Analysis Results")
+            
+            # Content Structure
+            display_category(
+                "Content Structure",
+                heuristic_scores.structure_score,
+                "Evaluates how well the content is structured for LLMs to parse and understand.",
+                [
+                    "Use clear headings and subheadings with proper hierarchy (H1, H2, H3)",
+                    "Break content into logical sections and paragraphs",
+                    "Use bullet points and numbered lists for better parsing",
+                    f"Found {heuristic_scores.h1_count} H1, {heuristic_scores.h2_count} H2, {heuristic_scores.h3_count} H3 tags"
+                ] if heuristic_scores.structure_score < 80 else ["Good heading structure detected."]
+            )
+            
+            # Metadata Optimization
+            metadata_score = heuristic_scores.technical_score
+            display_category(
+                "Metadata Optimization",
+                metadata_score,
+                "Checks if the page has proper metadata that helps LLMs understand the context.",
+                [
+                    "Add a descriptive meta description" if not heuristic_scores.has_meta_description else "Meta description present",
+                    "Use semantic schema markup for better context" if not heuristic_scores.has_json_ld else f"JSON-LD schema found ({heuristic_scores.json_ld_count} items)",
+                    "Add proper Open Graph tags" if not heuristic_scores.has_meta_description else "Open Graph likely present"
+                ]
+            )
+            
+            # Readability
+            display_category(
+                "Readability",
+                heuristic_scores.readability_score,
+                "Analyzes how easy it is for LLMs to process and understand the text content.",
+                [
+                    f"Flesch Reading Ease: {heuristic_scores.flesch_reading_ease:.1f}",
+                    f"Flesch-Kincaid Grade: {heuristic_scores.flesch_kincaid_grade:.1f}",
+                    "Use shorter sentences (aim for under 20 words)" if heuristic_scores.readability_score < 60 else "Sentence length is good",
+                    "Simplify language and avoid jargon" if heuristic_scores.readability_score < 60 else "Language complexity is appropriate"
+                ]
+            )
+            
+            # Entity Clarity (AI)
+            if ai_evaluation and not ai_evaluation.error:
+                display_category(
+                    "Entity Clarity",
+                    ai_evaluation.entity_clarity_score,
+                    "Measures how clearly brands, products, and concepts are defined for AI understanding.",
+                    ai_evaluation.ai_recommendations if ai_evaluation.entity_clarity_score < 70 else ["Entity definitions are clear."]
                 )
                 
-                if total_score >= 80:
-                    st.success("Good AI optimization")
-                elif total_score >= 60:
-                    st.info("Decent, could improve")
-                elif total_score >= 40:
-                    st.warning("Needs work")
-                else:
-                    st.error("Poor AI optimization")
+                # Extractability (AI)
+                display_category(
+                    "Extractability",
+                    ai_evaluation.extractability_score,
+                    "Evaluates how easily content can be chunked and retrieved by RAG systems.",
+                    ["Content structure could be improved for better extraction"] if ai_evaluation.extractability_score < 70 else ["Content is well-structured for extraction."]
+                )
                 
-                display_score_breakdown(heuristic_scores, ai_evaluation)
-                display_recommendations(heuristic_scores, ai_evaluation)
-                
-                with st.expander("View content"):
-                    st.write(f"Title: {content.title}")
-                    st.write(f"Meta: {content.meta_description or 'None'}")
-                    st.text_area("Content", content.content[:2000] + "...", height=150)
-    
-    else:
-        col1, col2 = st.columns(2)
-        
-        with col1:
-            url1 = st.text_input("URL 1", key="url1")
-        
-        with col2:
-            url2 = st.text_input("URL 2", key="url2")
-        
-        if st.button("Compare", type="primary") and url1 and url2:
-            with st.spinner("Analyzing URL 1..."):
-                content1, h1, ai1 = analyze_single_url(url1)
+                # Citation Potential (AI)
+                display_category(
+                    "Citation Potential",
+                    ai_evaluation.citation_potential_score,
+                    "Assesses if the content is authoritative enough for AI to cite as reference.",
+                    ["Add more authoritative sources and citations"] if ai_evaluation.citation_potential_score < 70 else ["Content appears authoritative."]
+                )
+            else:
+                st.info("AI analysis not available. Add Groq API key for full analysis.")
             
-            with st.spinner("Analyzing URL 2..."):
-                content2, h2, ai2 = analyze_single_url(url2)
-            
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.subheader("URL 1")
-                if h1:
-                    score1 = h1.overall_heuristic_score * 0.6
-                    if ai1 and not ai1.error:
-                        score1 += ai1.overall_ai_score * 0.4
-                    st.plotly_chart(create_gauge_chart(score1, "Score", "#1f77b4"), use_container_width=True)
-                    st.metric("Score", f"{score1:.1f}")
-            
-            with col2:
-                st.subheader("URL 2")
-                if h2:
-                    score2 = h2.overall_heuristic_score * 0.6
-                    if ai2 and not ai2.error:
-                        score2 += ai2.overall_ai_score * 0.4
-                    st.plotly_chart(create_gauge_chart(score2, "Score", "#2ca02c"), use_container_width=True)
-                    st.metric("Score", f"{score2:.1f}")
-            
-            if h1 and h2:
-                if score1 > score2:
-                    st.success(f"URL 1 is better by {score1 - score2:.1f} points")
-                elif score2 > score1:
-                    st.success(f"URL 2 is better by {score2 - score1:.1f} points")
-                else:
-                    st.info("Tie")
+            # View content
+            with st.expander("View Extracted Content"):
+                st.write(f"**Title:** {content.title}")
+                st.write(f"**Meta Description:** {content.meta_description or 'None'}")
+                st.write(f"**Word Count:** {heuristic_scores.word_count:,}")
+                st.write(f"**JSON-LD Items:** {heuristic_scores.json_ld_count}")
+                st.text_area("Content Preview", content.content[:2000] + "...", height=150)
 
 
 if __name__ == "__main__":
